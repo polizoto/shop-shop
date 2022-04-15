@@ -1,10 +1,16 @@
 import { useReducer } from 'react';
 
 import {
-    UPDATE_PRODUCTS,
-    UPDATE_CATEGORIES,
-    UPDATE_CURRENT_CATEGORY
-  } from "./actions";
+  UPDATE_PRODUCTS,
+  UPDATE_CATEGORIES,
+  UPDATE_CURRENT_CATEGORY,
+  ADD_TO_CART,
+  ADD_MULTIPLE_TO_CART,
+  REMOVE_FROM_CART,
+  UPDATE_CART_QUANTITY,
+  CLEAR_CART,
+  TOGGLE_CART
+} from './actions';
 
   export const reducer = (state, action) => {
     switch (action.type) {
@@ -26,6 +32,64 @@ import {
             ...state,
             currentCategory: action.currentCategory
         };
+
+    // Let's not forget to include the ...state operator to preserve everything else on state. Then we can update the cart property to add action.product to the end of the array. We'll also set cartOpen to true so that users can immediately view the cart with the newly added item, if it's not already open. 
+
+    case ADD_TO_CART:
+          return {
+            ...state,
+            cartOpen: true,
+                // What is the value of product? Where does that data come from?
+                // See line 69 of Reducers test
+                //       product: { purchaseQuantity: 1 }
+            cart: [...state.cart, action.product]
+          };
+    
+    case ADD_MULTIPLE_TO_CART:
+      return {
+        ...state,
+        cart: [...state.cart, ...action.products],
+      };
+
+      case REMOVE_FROM_CART:
+      let newState = state.cart.filter(product => {
+        return product._id !== action._id;
+      });
+
+      return {
+        ...state,
+        cartOpen: newState.length > 0,
+        // this is an interesting use
+        cart: newState
+      };
+
+      case UPDATE_CART_QUANTITY:
+      return {
+      ...state,
+      cartOpen: true,
+      cart: state.cart.map(product => {
+        if (action._id === product._id) {
+          product.purchaseQuantity = action.purchaseQuantity;
+        }
+      // Why did we need to use the map() method to create a new array instead of updating state.cart directly?
+      // The original state should be treated as immutable.
+        return product;
+      })
+      };
+
+      case CLEAR_CART:
+      return {
+      ...state,
+      cartOpen: false,
+      cart: []
+      };
+
+      // This test expects cartOpen to be the opposite of its previous value each time the action is called.
+      case TOGGLE_CART:
+      return {
+      ...state,
+      cartOpen: !state.cartOpen
+      };
   
       default:
         return state;

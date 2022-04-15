@@ -2,8 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@apollo/client';
 import { useStoreContext } from "../utils/GlobalState";
-import { UPDATE_PRODUCTS } from "../utils/actions";
-
+import {
+  REMOVE_FROM_CART,
+  UPDATE_CART_QUANTITY,
+  ADD_TO_CART,
+  UPDATE_PRODUCTS,
+} from '../utils/actions';
+import Cart from '../components/Cart';
 import { QUERY_PRODUCTS } from '../utils/queries';
 import spinner from '../assets/spinner.gif';
 
@@ -30,7 +35,7 @@ function Detail() {
   
   const { loading, data } = useQuery(QUERY_PRODUCTS);
   
-  const { products } = state;
+  const { products, cart } = state;
   
   useEffect(() => {
     if (products.length) {
@@ -45,6 +50,33 @@ function Detail() {
     // If that's the case, then you wouldn't have any products saved in global state just yet. The useEffect() Hook is set up so that if we don't, we'll use the product data that we returned from the useQuery() Hook to set the product data to the global state object. When that's complete, we run through this all over again. But this time, there is data in the products array, and then we run setCurrentProduct() to display a single product's data. This is known as the dependency array.
   }, [products, data, dispatch, id]);
 
+
+  const addToCart = () => {
+    const itemInCart = cart.find((cartItem) => cartItem._id === id);
+  
+    if (itemInCart) {
+      dispatch({
+        type: UPDATE_CART_QUANTITY,
+        _id: id,
+        purchaseQuantity: parseInt(itemInCart.purchaseQuantity) + 1
+      });
+    } else {
+      dispatch({
+        type: ADD_TO_CART,
+        product: { ...currentProduct, purchaseQuantity: 1 }
+      });
+    }
+  };
+
+  // If you remove the last item from the cart, the cart will also close, because cartOpen will have become false.
+
+  const removeFromCart = () => {
+    dispatch({
+      type: REMOVE_FROM_CART,
+      _id: currentProduct._id
+    });
+  };
+
   return (
     <>
       {currentProduct ? (
@@ -57,8 +89,15 @@ function Detail() {
 
           <p>
             <strong>Price:</strong>${currentProduct.price}{' '}
-            <button>Add to Cart</button>
-            <button>Remove from Cart</button>
+            <button onClick={addToCart}>Add to cart</button>
+            {/* For an improved user experience, you can also conditionally disable the <button> element if the item isn't in the cart. */}
+            <button 
+            disabled={!cart.find(p => p._id === currentProduct._id)} 
+            onClick={removeFromCart}
+            >
+            Remove from Cart
+            </button>
+
           </p>
 
           <img
@@ -68,6 +107,7 @@ function Detail() {
         </div>
       ) : null}
       {loading ? <img src={spinner} alt="loading" /> : null}
+      <Cart />
     </>
   );
 }
